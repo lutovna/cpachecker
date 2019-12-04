@@ -86,6 +86,18 @@ public class CIStringState
     return this;
   }
 
+  // this function need for deleting domains of local variables
+  public CIStringState deleteByPrefix(String prefix) {
+    CIStringState newState = this;
+
+    for (String stringName : ciDomains.keySet()) {
+      if (stringName.startsWith(prefix)) {
+        newState = newState.removeCIString(stringName);
+      }
+    }
+
+    return newState;
+  }
   // Join two sets (name, CIString). If exist name from this.keySet() and from pOther.keySet() join
   // their CIStrings
   @Override

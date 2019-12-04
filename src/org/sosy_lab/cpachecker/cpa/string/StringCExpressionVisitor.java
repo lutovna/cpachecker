@@ -56,11 +56,17 @@ public class StringCExpressionVisitor
   private final CFAEdge cfaEdge;
   private final CIStringState state;
   private final BuiltinFunctions builtins;
+  private CalledFunctions called;
 
-  public StringCExpressionVisitor(CFAEdge edge, CIStringState pState, BuiltinFunctions pBuiltins) {
+  public StringCExpressionVisitor(
+      CFAEdge edge,
+      CIStringState pState,
+      BuiltinFunctions pBuiltins,
+      CalledFunctions pCalled) {
     cfaEdge = edge;
     state = pState;
     builtins = pBuiltins;
+    called = pCalled;
   }
 
   @Override
@@ -100,12 +106,12 @@ public class StringCExpressionVisitor
 
   @Override
   public CIString visit(CFieldReference e) throws UnrecognizedCodeException {
-    return state.getCIString(e.toQualifiedASTString());
+    return state.getCIString(called.getQualifiedVariableName(e.toASTString()));
   }
 
   @Override
   public CIString visit(CIdExpression e) throws UnrecognizedCodeException {
-    return state.getCIString(e.getDeclaration().getQualifiedName());
+    return state.getCIString(called.getQualifiedVariableNameFromDeclaration(e.getDeclaration()));
   }
 
   @Override
