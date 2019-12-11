@@ -218,9 +218,13 @@ public class StringCExpressionVisitor
         if (isInters) {
           // now we can't say which symbols are certainly in string
           exCIStr1.clearCertainly();
+          builtins.setPrevCIString(exCIStr1);
+          return exCIStr1;
+        } else {
+          // return NULL
+          builtins.setNEWTrue();
+          return bottomCIString.INSTANCE;
         }
-        builtins.setPrevCIString(exCIStr1);
-        return exCIStr1;
       }
 
     } catch (UnrecognizedCodeException e) {
