@@ -373,10 +373,9 @@ public class StringTransferRelation
 
     if (expression instanceof CArraySubscriptExpression) {
       expression = ((CArraySubscriptExpression) expression).getArrayExpression();
-      newState = addCIString(newState, expression, ciString);
-    }
-
-    if (expression instanceof CIdExpression) {
+      newState = addCIString(newState, expression, ciString); // add without remove bc we don't know
+                                                              // which part of the string changed
+    } else if (expression instanceof CIdExpression) {
         newState =
           newState.removeAndAddCIString(
               called.getQualifiedVariableNameFromDeclaration(
