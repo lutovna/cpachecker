@@ -192,7 +192,7 @@ public class StringCExpressionVisitor
       CIString ciStr1 = s1.accept(this);
       CIString ciStr2 = s2.accept(this);
 
-      if (ciStr1.isBottom()) {
+      if (ciStr1.isBottom() || ciStr2.isBottom()) {
         // if string = NULL
         if (!builtins.isNEW()) {
           return builtins.getPrevCIString();
@@ -202,6 +202,7 @@ public class StringCExpressionVisitor
       } else {
         // if string != NULL
         explicitCIString exCIStr1 = (explicitCIString) ciStr1;
+        explicitCIString exCIStr2 = (explicitCIString) ciStr2;
 
         if (exCIStr1.isEmpty()) {
           // if string is empty we return NULL
@@ -212,7 +213,7 @@ public class StringCExpressionVisitor
 
         // Exists one symbol from delim in string?
         Boolean isInters =
-            !SetUtil.generalizedIntersect(ciStr1.getMaybe().asSet(), ciStr2.getMaybe().asSet())
+            !SetUtil.generalizedIntersect(exCIStr1.getMaybe().asSet(), exCIStr2.getMaybe().asSet())
                 .isEmpty();
 
         if (isInters) {

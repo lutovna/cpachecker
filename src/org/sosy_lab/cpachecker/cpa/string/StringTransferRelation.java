@@ -130,7 +130,9 @@ public class StringTransferRelation
     if (!ciStr1.isBottom() && !ciStr2.isBottom()) {
 
       Set<Character> set =
-        SetUtil.generalizedIntersect(ciStr1.getMaybe().asSet(), ciStr2.getMaybe().asSet());
+          SetUtil.generalizedIntersect(
+              ((explicitCIString) ciStr1).getMaybe().asSet(),
+              ((explicitCIString) ciStr2).getMaybe().asSet());
 
       switch (operator) {
         case EQUALS: {

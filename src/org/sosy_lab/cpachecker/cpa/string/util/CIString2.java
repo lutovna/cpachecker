@@ -27,18 +27,18 @@ import java.util.Set;
 import org.sosy_lab.cpachecker.cpa.ifcsecurity.util.SetUtil;
 import org.sosy_lab.cpachecker.cpa.smg.util.PersistentSet;
 
-public class explicitCIString implements CIString {
+public class CIString2 implements StringDomain<CIString2> {
 
   private static final long serialVersionUID = 1L;
   private PersistentSet<Character> certainly;
   private PersistentSet<Character> maybe;
 
-  public explicitCIString() {
+  public CIString2() {
     certainly = PersistentSet.of();
     maybe = PersistentSet.of();
   }
 
-  public explicitCIString(String str) {
+  public CIString2(String str) {
 
     certainly = PersistentSet.of();
     maybe = PersistentSet.of();
@@ -51,19 +51,21 @@ public class explicitCIString implements CIString {
     }
   }
 
-  private explicitCIString(PersistentSet<Character> pCertainly, PersistentSet<Character> pMaybe) {
+  private CIString2(PersistentSet<Character> pCertainly, PersistentSet<Character> pMaybe) {
     certainly = pCertainly;
     maybe = pMaybe;
   }
 
-  public explicitCIString copyOf() {
-    return new explicitCIString(certainly, maybe);
+  public CIString2 copyOf() {
+    return new CIString2(certainly, maybe);
   }
 
-  public final static explicitCIString EMPTY = new explicitCIString();
+  public final static CIString2 EMPTY = new CIString2();
+  public final static bottomString<CIString2> BOTTOM = new bottomString<>();
+  public final static topString<CIString2> TOP = new topString<>();
 
   public boolean isEmpty() {
-    return equals(explicitCIString.EMPTY);
+    return equals(CIString2.EMPTY);
   }
 
   @Override
@@ -72,17 +74,18 @@ public class explicitCIString implements CIString {
   }
 
   @Override
+  public boolean isTop() {
+    return false;
+  }
+
+  @Override
   public boolean equals(Object pObj) {
 
-    if (!(pObj instanceof CIString)) {
+    if (!(pObj instanceof CIString2)) {
       return false;
     }
 
-    if (((CIString) pObj).isBottom()) {
-      return false;
-    }
-
-    explicitCIString other = (explicitCIString) pObj;
+    CIString2 other = (CIString2) pObj;
 
     return certainly.equals(other.getCertainly()) && maybe.equals(other.getMaybe());
   }
@@ -118,17 +121,17 @@ public class explicitCIString implements CIString {
   }
 
   @Override
-  public CIString join(CIString pOther) {
+  public StringDomain<CIString2> join(StringDomain<CIString2> pOther) {
     // if (pOther == null) {
     // return null;
     // }
 
     if(pOther.isBottom()) {
-      return bottomCIString.INSTANCE;
+      return BOTTOM;
     }
 
-    explicitCIString str = new explicitCIString();
-    explicitCIString expOther = (explicitCIString) pOther;
+    CIString2 str = new CIString2();
+    CIString2 expOther = (CIString2) pOther;
 
     str.setCertainly(
         SetUtil.generalizedIntersect(this.getCertainly().asSet(), expOther.getCertainly().asSet()));
@@ -138,7 +141,7 @@ public class explicitCIString implements CIString {
   }
 
   @Override
-  public boolean isLessOrEqual(CIString pOther) {
+  public boolean isLessOrEqual(StringDomain<CIString2> pOther) {
 
     if (pOther.isBottom()) {
       return false;
@@ -148,7 +151,7 @@ public class explicitCIString implements CIString {
       return true;
     }
 
-    explicitCIString expOther = (explicitCIString) pOther;
+    CIString2 expOther = (CIString2) pOther;
 
     return this.getCertainly().containsAll(expOther.getCertainly().asSet())
         && expOther.getMaybe().containsAll(this.getMaybe().asSet());

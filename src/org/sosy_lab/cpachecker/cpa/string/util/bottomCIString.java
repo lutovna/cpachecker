@@ -23,8 +23,6 @@
  */
 package org.sosy_lab.cpachecker.cpa.string.util;
 
-import org.sosy_lab.cpachecker.cpa.smg.util.PersistentSet;
-
 public enum bottomCIString implements CIString {
 
   INSTANCE;
@@ -48,16 +46,6 @@ public enum bottomCIString implements CIString {
   @Override
   public boolean isLessOrEqual(CIString pOther) {
     return true;
-  }
-
-  @Override
-  public PersistentSet<Character> getCertainly() {
-    return null;
-  }
-
-  @Override
-  public PersistentSet<Character> getMaybe() {
-    return null;
   }
 
 }
