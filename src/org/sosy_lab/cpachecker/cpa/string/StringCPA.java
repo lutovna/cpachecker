@@ -55,14 +55,14 @@ public class StringCPA extends AbstractCPA {
    */
 
   protected StringCPA(Configuration config) throws InvalidConfigurationException {
-    super("SEP", "JOIN", DelegateAbstractDomain.<CIStringState>getInstance(), null);
+    super("SEP", "JOIN", DelegateAbstractDomain.<Strings>getInstance(), null);
     config.inject(this);
   }
 
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition)
       throws InterruptedException {
-    return new CIStringState();
+    return new Strings();
   }
 
   @Override

@@ -45,112 +45,113 @@ import org.sosy_lab.cpachecker.cfa.ast.c.DefaultCExpressionVisitor;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.cpa.ifcsecurity.util.SetUtil;
 import org.sosy_lab.cpachecker.cpa.string.util.CIString;
-import org.sosy_lab.cpachecker.cpa.string.util.bottomCIString;
-import org.sosy_lab.cpachecker.cpa.string.util.explicitCIString;
+import org.sosy_lab.cpachecker.cpa.string.util.PRString;
+import org.sosy_lab.cpachecker.cpa.string.util.SUString;
+import org.sosy_lab.cpachecker.cpa.string.util.StringState;
 import org.sosy_lab.cpachecker.exceptions.UnrecognizedCodeException;
 
 public class StringCExpressionVisitor
-    extends DefaultCExpressionVisitor<CIString, UnrecognizedCodeException>
-    implements CRightHandSideVisitor<CIString, UnrecognizedCodeException> {
+    extends DefaultCExpressionVisitor<StringState, UnrecognizedCodeException>
+    implements CRightHandSideVisitor<StringState, UnrecognizedCodeException> {
 
   private final CFAEdge cfaEdge;
-  private final CIStringState state;
+  private final Strings strings;
   private final BuiltinFunctions builtins;
   private CalledFunctions called;
 
   public StringCExpressionVisitor(
       CFAEdge edge,
-      CIStringState pState,
+      Strings pStrings,
       BuiltinFunctions pBuiltins,
       CalledFunctions pCalled) {
     cfaEdge = edge;
-    state = pState;
+    strings = pStrings;
     builtins = pBuiltins;
     called = pCalled;
   }
 
   @Override
-  protected CIString visitDefault(CExpression pExp) {
-    return bottomCIString.INSTANCE;
+  protected StringState visitDefault(CExpression pExp) {
+    return StringState.BOTTOM;
   }
 
   @Override
-  public CIString visit(CArraySubscriptExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CArraySubscriptExpression e) throws UnrecognizedCodeException {
     return (e.getArrayExpression()).accept(this);
   }
 
   @Override
-  public CIString visit(CCharLiteralExpression e) throws UnrecognizedCodeException {
-    return new explicitCIString(Character.toString(e.getCharacter()));
+  public StringState visit(CCharLiteralExpression e) throws UnrecognizedCodeException {
+    return new StringState(Character.toString(e.getCharacter()));
   }
 
   @Override
-  public CIString visit(CStringLiteralExpression e) throws UnrecognizedCodeException {
-    return new explicitCIString(e.getContentString());
+  public StringState visit(CStringLiteralExpression e) throws UnrecognizedCodeException {
+    return new StringState(e.getContentString());
   }
 
   @Override
-  public CIString visit(CBinaryExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CBinaryExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CCastExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CCastExpression e) throws UnrecognizedCodeException {
     return e.getOperand().accept(this);
   }
 
   @Override
-  public CIString visit(CComplexCastExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CComplexCastExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CFieldReference e) throws UnrecognizedCodeException {
-    return state.getCIString(called.getQualifiedVariableName(e.toASTString()));
+  public StringState visit(CFieldReference e) throws UnrecognizedCodeException {
+    return strings.getStringState(called.getQualifiedVariableName(e.toASTString()));
   }
 
   @Override
-  public CIString visit(CIdExpression e) throws UnrecognizedCodeException {
-    return state.getCIString(called.getQualifiedVariableNameFromDeclaration(e.getDeclaration()));
+  public StringState visit(CIdExpression e) throws UnrecognizedCodeException {
+    return strings.getStringState(called.getQualifiedVariableNameFromDeclaration(e.getDeclaration()));
   }
 
   @Override
-  public CIString visit(CImaginaryLiteralExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CImaginaryLiteralExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CFloatLiteralExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CFloatLiteralExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CIntegerLiteralExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CIntegerLiteralExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CTypeIdExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CTypeIdExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CUnaryExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CUnaryExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CPointerExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CPointerExpression e) throws UnrecognizedCodeException {
     return (e.getOperand()).accept(this);
   }
 
   @Override
-  public CIString visit(CAddressOfLabelExpression e) throws UnrecognizedCodeException {
+  public StringState visit(CAddressOfLabelExpression e) throws UnrecognizedCodeException {
     return visitDefault(e);
   }
 
   @Override
-  public CIString visit(CFunctionCallExpression fCallExpression)
+  public StringState visit(CFunctionCallExpression fCallExpression)
       throws UnrecognizedCodeException {
 
     CExpression fNameExpression = fCallExpression.getFunctionNameExpression();
@@ -162,10 +163,10 @@ public class StringCExpressionVisitor
         return evaluateFunctionExpression(funcName, fCallExpression);
       }
     }
-    return bottomCIString.INSTANCE;
+    return StringState.BOTTOM;
   }
 
-  private CIString evaluateFunctionExpression(
+  private StringState evaluateFunctionExpression(
       String fName,
       CFunctionCallExpression expression) {
     switch (fName) {
@@ -176,11 +177,11 @@ public class StringCExpressionVisitor
       case "strpbrk":
         return evaluateSTRSTR(expression);
       default:
-        return explicitCIString.EMPTY;
+        return StringState.EMPTY;
     }
   }
 
-  private CIString evaluateSTRTOK(CFunctionCallExpression expression) {
+  private StringState evaluateSTRTOK(CFunctionCallExpression expression) {
 
     // char *strtok(char *string, const char *delim)
 
@@ -189,52 +190,57 @@ public class StringCExpressionVisitor
 
     try {
 
-      CIString ciStr1 = s1.accept(this);
-      CIString ciStr2 = s2.accept(this);
+      StringState strState1 = s1.accept(this);
+      StringState strState2 = s2.accept(this);
 
-      if (ciStr1.isBottom() || ciStr2.isBottom()) {
+      if (strState1.isBottom() || strState2.isBottom()) {
         // if string = NULL
         if (!builtins.isNEW()) {
           return builtins.getPrevCIString();
         }
-        return bottomCIString.INSTANCE;
+        return StringState.BOTTOM;
 
       } else {
         // if string != NULL
-        explicitCIString exCIStr1 = (explicitCIString) ciStr1;
-        explicitCIString exCIStr2 = (explicitCIString) ciStr2;
+        // explicitCIString exCIStr1 = (explicitCIString) strState1;
+        // explicitCIString exCIStr2 = (explicitCIString) strState2;
 
-        if (exCIStr1.isEmpty()) {
+        if (strState1.isEmpty()) {
           // if string is empty we return NULL
-          return bottomCIString.INSTANCE;
+          return StringState.BOTTOM;
         }
 
         builtins.setNEWFalse();
 
+        strState1.setPRDomain(PRString.EMPTY);
+        strState1.setSUDomain(SUString.EMPTY);
         // Exists one symbol from delim in string?
         Boolean isInters =
-            !SetUtil.generalizedIntersect(exCIStr1.getMaybe().asSet(), exCIStr2.getMaybe().asSet())
+            !SetUtil
+                .generalizedIntersect(
+                    ((CIString) strState1.getCIDomain()).getMaybe().asSet(),
+                    ((CIString) strState2.getCIDomain()).getMaybe().asSet())
                 .isEmpty();
 
         if (isInters) {
           // now we can't say which symbols are certainly in string
-          exCIStr1.clearCertainly();
-          builtins.setPrevCIString(exCIStr1);
-          return exCIStr1;
+          ((CIString) strState1.getCIDomain()).clearCertainly();
+          builtins.setPrevStringState(strState1);
+          return strState1;
         } else {
           // return NULL
           builtins.setNEWTrue();
-          return bottomCIString.INSTANCE;
+          return StringState.BOTTOM;
         }
       }
 
     } catch (UnrecognizedCodeException e) {
       e.printStackTrace();
     }
-    return explicitCIString.EMPTY;
+    return StringState.EMPTY;
   }
 
-  private CIString evaluateSTRSTR(CFunctionCallExpression expression) {
+  private StringState evaluateSTRSTR(CFunctionCallExpression expression) {
 
     // char *strstr(const char *str1, const char *str2)
     CExpression s1 = expression.getParameterExpressions().get(0);
@@ -242,34 +248,34 @@ public class StringCExpressionVisitor
 
     try {
 
-      CIString ciStr1 = s1.accept(this);
-      CIString ciStr2 = s2.accept(this);
+      StringState strState1 = s1.accept(this);
+      StringState strState2 = s2.accept(this);
 
-      if (ciStr1.isBottom() || ciStr2.isBottom()) {
+      if (strState1.isBottom() || strState2.isBottom()) {
         // ERROR
         // TODO: write it
-        return bottomCIString.INSTANCE;
+        return StringState.BOTTOM;
       }
 
-      explicitCIString exCIStr1 = (explicitCIString) ciStr1;
-      explicitCIString exCIStr2 = (explicitCIString) ciStr2;
+      // explicitCIString exCIStr1 = (explicitCIString) strState1;
+      // explicitCIString exCIStr2 = (explicitCIString) strState2;
 
-      if (exCIStr1.isLessOrEqual(exCIStr2)) {
+      if (strState1.isLessOrEqual(strState2)) {
         // if str2 is found in str1
-        if (exCIStr2.isEmpty()) {
-          return exCIStr1;
+        if (strState2.isEmpty()) {
+          return strState1;
         }
         // we know only that str2 is in certainly
-        return exCIStr1.join(exCIStr2);
+        return strState1.join(strState2);
 
       } else {
         // if the str2 is not found in str1 return NULL
-        return bottomCIString.INSTANCE;
+        return StringState.BOTTOM;
       }
 
     } catch (UnrecognizedCodeException e) {
       e.printStackTrace();
     }
-    return explicitCIString.EMPTY;
+    return StringState.EMPTY;
   }
 }

@@ -21,8 +21,7 @@ package org.sosy_lab.cpachecker.cpa.string;
 
 import com.google.common.collect.Sets;
 import java.util.Set;
-import org.sosy_lab.cpachecker.cpa.string.util.CIString;
-import org.sosy_lab.cpachecker.cpa.string.util.bottomCIString;
+import org.sosy_lab.cpachecker.cpa.string.util.StringState;
 
 public class BuiltinFunctions {
 
@@ -39,7 +38,7 @@ public class BuiltinFunctions {
           "strpbrk");
 
   private Boolean STRTOK_NEW;
-  private CIString prevCIString;
+  private StringState prevString;
 
   public final boolean isABuiltin(String fName) {
     return BFUNC.contains(fName);
@@ -47,7 +46,7 @@ public class BuiltinFunctions {
 
   BuiltinFunctions() {
     STRTOK_NEW = true;
-    prevCIString = bottomCIString.INSTANCE;
+    prevString = StringState.BOTTOM;
   }
 
   public void setNEWTrue() {
@@ -62,11 +61,11 @@ public class BuiltinFunctions {
     return STRTOK_NEW;
   }
 
-  public void setPrevCIString(CIString ciString) {
-    prevCIString = ciString;
+  public void setPrevStringState(StringState string) {
+    prevString = string;
   }
 
-  public CIString getPrevCIString() {
-    return prevCIString;
+  public StringState getPrevCIString() {
+    return prevString;
   }
 }

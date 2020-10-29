@@ -24,6 +24,7 @@
 package org.sosy_lab.cpachecker.cpa.string;
 
 import com.google.common.base.Optional;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -56,12 +57,15 @@ import org.sosy_lab.cpachecker.core.defaults.ForwardingTransferRelation;
 import org.sosy_lab.cpachecker.core.defaults.SingletonPrecision;
 import org.sosy_lab.cpachecker.cpa.ifcsecurity.util.SetUtil;
 import org.sosy_lab.cpachecker.cpa.string.util.CIString;
-import org.sosy_lab.cpachecker.cpa.string.util.explicitCIString;
+import org.sosy_lab.cpachecker.cpa.string.util.PRString;
+import org.sosy_lab.cpachecker.cpa.string.util.SUString;
+import org.sosy_lab.cpachecker.cpa.string.util.StringDomain;
+import org.sosy_lab.cpachecker.cpa.string.util.StringState;
 import org.sosy_lab.cpachecker.exceptions.CPATransferException;
 import org.sosy_lab.cpachecker.exceptions.UnrecognizedCodeException;
 
 public class StringTransferRelation
-    extends ForwardingTransferRelation<CIStringState, CIStringState, SingletonPrecision> {
+    extends ForwardingTransferRelation<Strings, Strings, SingletonPrecision> {
 
   private final BuiltinFunctions builtins = new BuiltinFunctions();
   private CalledFunctions called = new CalledFunctions(); // function calls stack
@@ -69,22 +73,22 @@ public class StringTransferRelation
   }
 
   @Override
-  protected CIStringState handleBlankEdge(BlankEdge cfaEdge) {
+  protected Strings handleBlankEdge(BlankEdge cfaEdge) {
     return state;
   }
 
   @Override
-  protected CIStringState handleReturnStatementEdge(CReturnStatementEdge cfaEdge) {
+  protected Strings handleReturnStatementEdge(CReturnStatementEdge cfaEdge) {
 
     called.setPredessorFunctionName(cfaEdge);
-    CIStringState newState = state;
+    Strings newState = state;
     if (cfaEdge.asAssignment().isPresent()) {
       CAssignment ass = cfaEdge.asAssignment().get();
       StringCExpressionVisitor visitor =
           new StringCExpressionVisitor(cfaEdge, newState, builtins, called);
       try {
         newState =
-            removeAndAddCIString(
+            removeAndAddStringState(
                 newState,
                 ass.getLeftHandSide(),
                 ((CExpression) ass.getRightHandSide()).accept(visitor));
@@ -99,12 +103,12 @@ public class StringTransferRelation
   }
 
   @Override
-  protected @Nullable CIStringState
+  protected @Nullable Strings
       handleAssumption(CAssumeEdge cfaEdge, CExpression expression, boolean truthAssumption)
           throws CPATransferException {
 
     called.setPredessorFunctionName(cfaEdge);
-    CIStringState newState = state;
+    Strings newState = state;
     if (!(expression instanceof CBinaryExpression)) {
       return null;
     }
@@ -123,26 +127,23 @@ public class StringTransferRelation
 
     StringCExpressionVisitor visitor =
         new StringCExpressionVisitor(cfaEdge, newState, builtins, called);
-    CIString ciStr1 = operand1.accept(visitor);
-    CIString ciStr2 = operand2.accept(visitor);
+    StringState strState1 = operand1.accept(visitor);
+    StringState strState2 = operand2.accept(visitor);
 
     // if we don't check this cpa_string will break on (x == 1) for example
-    if (!ciStr1.isBottom() && !ciStr2.isBottom()) {
+    if (!strState1.isBottom() && !strState2.isBottom()) {
 
-      Set<Character> set =
-          SetUtil.generalizedIntersect(
-              ((explicitCIString) ciStr1).getMaybe().asSet(),
-              ((explicitCIString) ciStr2).getMaybe().asSet());
+      boolean equal = canBeEqual(strState1, strState2);
 
       switch (operator) {
         case EQUALS: {
-          if (set.isEmpty()) {
+          if (!equal) {
             return null;
           }
         }
           break;
         case NOT_EQUALS: {
-          if (!set.isEmpty()) {
+          if (equal) {
             return null;
           }
         }
@@ -157,12 +158,12 @@ public class StringTransferRelation
 
 
   @Override
-  protected CIStringState
+  protected Strings
       handleDeclarationEdge(CDeclarationEdge cfaEdge, CDeclaration declaration)
           throws UnrecognizedCodeException {
 
     called.setPredessorFunctionName(cfaEdge);
-    CIStringState newState = state;
+    Strings newState = state;
 
     if (!(declaration instanceof CVariableDeclaration)) {
       return newState;
@@ -176,9 +177,9 @@ public class StringTransferRelation
     CExpression exp = init.getExpression();
 
     newState =
-        newState.removeAndAddCIString(
+          newState.removeAndAddStringState(
               called.getQualifiedVariableNameFromDeclaration(decl),
-              evaluateCIString(newState, exp, cfaEdge));
+              evaluateStringState(newState, exp, cfaEdge));
     }
 
     return newState;
@@ -186,7 +187,7 @@ public class StringTransferRelation
   }
 
   @Override
-  protected CIStringState handleStatementEdge(CStatementEdge cfaEdge, CStatement statement)
+  protected Strings handleStatementEdge(CStatementEdge cfaEdge, CStatement statement)
       throws UnrecognizedCodeException {
 
     called.setPredessorFunctionName(cfaEdge);
@@ -209,7 +210,7 @@ public class StringTransferRelation
     return state;
   }
 
-  protected CIStringState
+  protected Strings
       handleBuiltinFunctionCall(
           CStatementEdge cfaEdge,
           CFunctionCallExpression fCallExp,
@@ -232,20 +233,20 @@ public class StringTransferRelation
     }
   }
 
-  private CIStringState handleAssignment(CAssignment assignExpression, CStatementEdge cfaEdge)
+  private Strings handleAssignment(CAssignment assignExpression, CStatementEdge cfaEdge)
       throws UnrecognizedCodeException {
 
-    CIStringState newState = state;
+    Strings newState = state;
 
     CExpression op1 = assignExpression.getLeftHandSide();
     CRightHandSide op2 = assignExpression.getRightHandSide();
 
-    return removeAndAddCIString(newState, op1, evaluateCIString(newState, op2, cfaEdge));
+    return removeAndAddStringState(newState, op1, evaluateStringState(newState, op2, cfaEdge));
 
   }
 
   @Override
-  protected CIStringState handleFunctionCallEdge(
+  protected Strings handleFunctionCallEdge(
       CFunctionCallEdge cfaEdge,
       List<CExpression> arguments,
       List<CParameterDeclaration> parameters,
@@ -253,19 +254,19 @@ public class StringTransferRelation
       throws UnrecognizedCodeException {
 
     called.setPredessorFunctionName(cfaEdge);
-    CIStringState newState = state;
+    Strings newState = state;
     called.addFunction(calledFunctionName);
 
     for (int i = 0; i < parameters.size(); i++) {
 
       // arguments have names with function from predessor
       called.setInPredFunTrue();
-      CIString ciString = evaluateCIString(newState, arguments.get(i), cfaEdge);
+      StringState stringState = evaluateStringState(newState, arguments.get(i), cfaEdge);
       // parametrs have names with function from peek of stack (= from successor)
       called.setInPredFunFalse();
       String formalParameterName =
           called.getQualifiedVariableNameFromDeclaration(parameters.get(i));
-      newState = newState.removeAndAddCIString(formalParameterName, ciString);
+      newState = newState.removeAndAddStringState(formalParameterName, stringState);
 
     }
 
@@ -273,7 +274,7 @@ public class StringTransferRelation
   }
 
   @Override
-  protected CIStringState handleFunctionReturnEdge(
+  protected Strings handleFunctionReturnEdge(
       CFunctionReturnEdge cfaEdge,
       CFunctionSummaryEdge fnkCall,
       CFunctionCall summaryExpr,
@@ -281,24 +282,23 @@ public class StringTransferRelation
       throws CPATransferException {
 
     called.setPredessorFunctionName(cfaEdge);
-    CIStringState newState = state;
+    Strings newState = state;
     Optional<CVariableDeclaration> retVar = fnkCall.getFunctionEntry().getReturnVariable();
 
 
     if (retVar.isPresent()) {
       String retVarName = called.getQualifiedVariableNameFromDeclaration(retVar.get());
-      newState =
-          newState.removeCIString(retVarName);
+      newState = newState.removeStringState(retVarName);
 
       if (summaryExpr instanceof CFunctionCallAssignmentStatement) {
         CFunctionCallAssignmentStatement funcExp = (CFunctionCallAssignmentStatement) summaryExpr;
 
         if (state.contains(retVarName)) {
           newState =
-            removeAndAddCIString(
-                newState,
+              removeAndAddStringState(
+                  newState,
                 funcExp.getLeftHandSide(),
-                state.getCIString(retVarName));
+                  state.getStringState(retVarName));
         }
       }
 
@@ -311,9 +311,9 @@ public class StringTransferRelation
     return deleteLocalVariablesAndPopFunction(newState);
   }
 
-  private CIStringState
+  private Strings
       evaluateSTRCPY(String fName, CStatementEdge cfaEdge, CFunctionCallExpression expression) {
-    CIStringState newState = state;
+    Strings newState = state;
 
     CExpression s1 = expression.getParameterExpressions().get(0);
     CExpression s2 = expression.getParameterExpressions().get(1);
@@ -321,17 +321,24 @@ public class StringTransferRelation
     StringCExpressionVisitor visitor =
         new StringCExpressionVisitor(cfaEdge, newState, builtins, called);
     try {
-      CIString ciStr2 = s2.accept(visitor);
+      StringState strState = s2.accept(visitor);
 
-      if (!ciStr2.isBottom() || !fName.equals("strcpy")) {
+      if (!strState.isBottom() || !fName.equals("strcpy")) {
 
-        explicitCIString newCIStr = (explicitCIString) ciStr2;
-        newCIStr.clearCertainly();
+        StringState newStringState = StringState.EMPTY.copyOf();
 
-        return removeAndAddCIString(newState, s1, newCIStr);
+        if (!strState.getCIDomain().isBottom() && !strState.getCIDomain().isTop()) {
+          CIString newCIStr = (CIString) strState.getCIDomain();
+          newCIStr.clearCertainly();
+          newStringState.setCIDomain(newCIStr);
+        } else {
+          newStringState.setCIDomain(strState.getCIDomain());
+        }
+
+        return removeAndAddStringState(newState, s1, newStringState);
 
       } else {
-        return removeAndAddCIString(newState, s1, ciStr2);
+        return removeAndAddStringState(newState, s1, strState);
       }
     } catch (UnrecognizedCodeException e) {
       e.printStackTrace();
@@ -339,30 +346,26 @@ public class StringTransferRelation
     return newState;
   }
 
-  private CIStringState
+  private Strings
       evaluateSTRCAT(String fName, CStatementEdge cfaEdge, CFunctionCallExpression expression) {
-    CIStringState newState = state;
+    Strings newState = state;
 
     CExpression s1 = expression.getParameterExpressions().get(0);
     CExpression s2 = expression.getParameterExpressions().get(1);
 
+    /*
+     * if (fName.equals("strncat")) { CExpression s3 = expression.getParameterExpressions().get(2);
+     * }
+     */
+
     StringCExpressionVisitor visitor =
         new StringCExpressionVisitor(cfaEdge, newState, builtins, called);
     try {
-      CIString ciStr1 = s1.accept(visitor);
-      CIString ciStr2 = s2.accept(visitor);
+      StringState strState1 = s1.accept(visitor);
+      StringState strState2 = s2.accept(visitor);
 
-      if (!ciStr1.isBottom() && !ciStr2.isBottom()) {
-
-        explicitCIString exCIStr1 = (explicitCIString) ciStr1;
-        explicitCIString exCIStr2 = (explicitCIString) ciStr2;
-
-        if (fName.equals("strcat")) {
-          exCIStr1.addToSertainly(exCIStr2.getCertainly().asSet());
-        }
-        exCIStr1.addToMaybe(exCIStr2.getMaybe().asSet());
-
-        return removeAndAddCIString(newState, s1, exCIStr1);
+      if (!strState1.isBottom() && !strState2.isBottom()) {
+        return removeAndAddStringState(newState, s1, concat(strState1, strState2, fName));
       }
     } catch (UnrecognizedCodeException e) {
       e.printStackTrace();
@@ -370,31 +373,32 @@ public class StringTransferRelation
     return newState;
   }
 
-  private CIStringState
-      removeAndAddCIString(CIStringState newState, CExpression expression, CIString ciString) {
+  private Strings
+      removeAndAddStringState(Strings newState, CExpression expression, StringState stringState) {
 
     if (expression instanceof CArraySubscriptExpression) {
       expression = ((CArraySubscriptExpression) expression).getArrayExpression();
-      newState = addCIString(newState, expression, ciString); // add without remove bc we don't know
+      newState = addStringState(newState, expression, stringState); // add without remove bc we
+                                                                        // don't know
                                                               // which part of the string changed
     } else if (expression instanceof CIdExpression) {
-        newState =
-          newState.removeAndAddCIString(
+      newState =
+          newState.removeAndAddStringState(
               called.getQualifiedVariableNameFromDeclaration(
                   ((CIdExpression) expression).getDeclaration()),
-                ciString);
+              stringState);
     } else if (expression instanceof CFieldReference) {
       newState =
-          newState.removeAndAddCIString(
+          newState.removeAndAddStringState(
               called.getQualifiedVariableName(expression.toASTString()),
-              ciString);
+              stringState);
     }
 
     return newState;
   }
 
-  private CIStringState
-      addCIString(CIStringState newState, CExpression expression, CIString ciString) {
+  private Strings
+      addStringState(Strings newState, CExpression expression, StringState stringState) {
 
     if (expression instanceof CArraySubscriptExpression) {
       expression = ((CArraySubscriptExpression) expression).getArrayExpression();
@@ -402,31 +406,130 @@ public class StringTransferRelation
     if (expression instanceof CIdExpression) {
 
       newState =
-          newState.addCIString(
+          newState.addStringState(
               called.getQualifiedVariableNameFromDeclaration(
                   ((CIdExpression) expression).getDeclaration()),
-              ciString);
+              stringState);
     } else if (expression instanceof CFieldReference) {
       newState =
-          newState.addCIString(called.getQualifiedVariableName(expression.toASTString()), ciString);
+          newState.addStringState(
+              called.getQualifiedVariableName(expression.toASTString()),
+              stringState);
     }
 
     return newState;
   }
 
   // return new domain(expression)
-  private CIString
-      evaluateCIString(CIStringState ciStringState, CRightHandSide expression, CFAEdge cfaEdge)
+  private StringState
+      evaluateStringState(Strings strings, CRightHandSide expression, CFAEdge cfaEdge)
           throws UnrecognizedCodeException {
     return expression
-        .accept(new StringCExpressionVisitor(cfaEdge, ciStringState, builtins, called));
+        .accept(new StringCExpressionVisitor(cfaEdge, strings, builtins, called));
   }
 
   // this function delete domains of function local variables and pop function from stack
-  private CIStringState deleteLocalVariablesAndPopFunction(CIStringState pState) {
-    CIStringState newState = pState;
+  private Strings deleteLocalVariablesAndPopFunction(Strings pState) {
+    Strings newState = pState;
     newState = newState.deleteByPrefix(called.getQualifiedFunctionName() + "::");
     called.popFunction();
     return newState;
   }
+
+  private boolean canBeEqual(StringState strState1, StringState strState2) {
+
+    StringDomain<CIString> ciStr1 = strState1.getCIDomain();
+    StringDomain<CIString> ciStr2 = strState2.getCIDomain();
+
+    if (!ciStr1.isBottom() && !ciStr2.isBottom() && !ciStr1.isTop() && !ciStr2.isTop()) {
+      Set<Character> set = new HashSet<>();
+
+      set =
+          SetUtil.generalizedIntersect(
+              ((CIString) ciStr1).getMaybe().asSet(),
+              ((CIString) ciStr2).getMaybe().asSet());
+
+      if (set.isEmpty()) {
+        return false;
+      }
+    }
+
+    StringDomain<PRString> prStr1 = strState1.getPRDomain();
+    StringDomain<PRString> prStr2 = strState2.getPRDomain();
+
+    if (!prStr1.isBottom() && !prStr2.isBottom() && !prStr1.isTop() && !prStr2.isTop()) {
+      PRString prString1 = (PRString) prStr1;
+      PRString prString2 = (PRString) prStr2;
+
+      if (prString1.getLenght() >= prString2.getLenght()) {
+        if (!prString1.getPrefix().startsWith(prString2.getPrefix())) {
+          return false;
+        }
+      } else {
+        if (!prString2.getPrefix().startsWith(prString1.getPrefix())) {
+          return false;
+        }
+      }
+
+    }
+
+    StringDomain<SUString> suStr1 = strState1.getSUDomain();
+    StringDomain<SUString> suStr2 = strState2.getSUDomain();
+
+    if (!suStr1.isBottom() && !suStr2.isBottom() && !suStr1.isTop() && !suStr2.isTop()) {
+      SUString suString1 = (SUString) suStr1;
+      SUString suString2 = (SUString) suStr2;
+
+      if (suString1.getLenght() >= suString2.getLenght()) {
+        if (!suString1.getSuffix().endsWith(suString2.getSuffix())) {
+          return false;
+        }
+      } else {
+        if (!suString2.getSuffix().endsWith(suString1.getSuffix())) {
+          return false;
+        }
+      }
+
+    }
+
+    return true;
+  }
+
+  private StringState concat(StringState strState1, StringState strState2, String fName) {
+
+    if (strState2.isTop() || strState1.isTop()) {
+      return StringState.TOP;
+    }
+
+    StringState newStringState = strState1.copyOf();
+
+    StringDomain<CIString> ciStr = newStringState.getCIDomain();
+    StringDomain<CIString> ciStr2 = strState2.getCIDomain();
+
+    if (!ciStr.isBottom() && !ciStr2.isBottom() && !ciStr.isTop() && !ciStr2.isTop()) {
+      if (fName.equals("strcat")) {
+        ((CIString) ciStr).addToSertainly(((CIString) ciStr2).getCertainly().asSet());
+      }
+      ((CIString) ciStr).addToMaybe(((CIString) ciStr2).getMaybe().asSet());
+    } else if (ciStr.isBottom() || ciStr2.isBottom()) {
+      newStringState.setCIDomain(CIString.BOTTOM);
+    } else if (ciStr.isTop() || ciStr2.isTop()) {
+      newStringState.setCIDomain(CIString.TOP);
+    }
+
+    if (strState2.getPRDomain().isBottom()) {
+      newStringState.setPRDomain(PRString.BOTTOM);
+    }
+
+    if (strState1.getSUDomain().isBottom()) {
+      newStringState.setSUDomain(SUString.BOTTOM);
+    } else if (fName.equals("strcat")) {
+      newStringState.setSUDomain(strState2.getSUDomain());
+    } else if (fName.equals("strncat")) {
+      newStringState.setSUDomain(SUString.EMPTY);
+    }
+
+    return newStringState;
+  }
+
 }

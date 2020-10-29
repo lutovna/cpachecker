@@ -23,6 +23,7 @@ public class PRString implements StringDomain<PRString> {
 
   private static final long serialVersionUID = 1L;
   private String prefix;
+  // private Integer number = 2;
 
   public PRString() {
     prefix = new String();
@@ -46,11 +47,11 @@ public class PRString implements StringDomain<PRString> {
   public final static bottomString<PRString> BOTTOM = new bottomString<>();
   public final static topString<PRString> TOP = new topString<>();
 
-  protected String getPrefix() {
+  public String getPrefix() {
     return prefix;
   }
 
-  protected Integer getLenght() {
+  public Integer getLenght() {
     return prefix.length();
   }
 
@@ -120,12 +121,16 @@ public class PRString implements StringDomain<PRString> {
 
   @Override
   public String toString() {
-    return "(" + prefix.toString() + ")";
+    return prefix.toString();
   }
 
   @Override
   public int hashCode() {
     return super.hashCode();
   }
+
+  /*
+   * @Override public Integer getNumber() { return number; }
+   */
 
 }

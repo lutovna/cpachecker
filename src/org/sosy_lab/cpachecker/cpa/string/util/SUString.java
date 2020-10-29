@@ -23,6 +23,7 @@ public class SUString implements StringDomain<SUString> {
 
   private static final long serialVersionUID = 1L;
   private String suffix;
+  // private Integer number = 3;
 
   public SUString() {
     suffix = new String();
@@ -46,14 +47,13 @@ public class SUString implements StringDomain<SUString> {
   public final static bottomString<SUString> BOTTOM = new bottomString<>();
   public final static topString<SUString> TOP = new topString<>();
 
-  protected String getSuffix() {
+  public String getSuffix() {
     return suffix;
   }
 
-  protected Integer getLenght() {
+  public Integer getLenght() {
     return suffix.length();
   }
-
 
   public void addToSuffix(Character c) {
     suffix = String.valueOf(c).concat(suffix);
@@ -124,12 +124,16 @@ public class SUString implements StringDomain<SUString> {
 
   @Override
   public String toString() {
-    return "(" + suffix.toString() + ")";
+    return suffix.toString();
   }
 
   @Override
   public int hashCode() {
     return super.hashCode();
   }
+
+  /*
+   * @Override public Integer getNumber() { return number; }
+   */
 
 }

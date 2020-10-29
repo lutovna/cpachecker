@@ -28,9 +28,13 @@ import org.sosy_lab.cpachecker.core.defaults.LatticeAbstractState;
 
 public interface StringDomain<T> extends Serializable, LatticeAbstractState<StringDomain<T>> {
 
+  // Integer number = 0;
+
   boolean isBottom();
 
   boolean isTop();
+
+  // Integer getNumber();
 
   @Override
   boolean equals(Object pObj);
@@ -71,6 +75,10 @@ public interface StringDomain<T> extends Serializable, LatticeAbstractState<Stri
       return true;
     }
 
+    /*
+     * @Override public Integer getNumber() { return number; }
+     */
+
   }
 
   public class topString<T> implements StringDomain<T> {
@@ -99,6 +107,10 @@ public interface StringDomain<T> extends Serializable, LatticeAbstractState<Stri
     public boolean isLessOrEqual(StringDomain<T> pOther) {
       return false;
     }
+
+    /*
+     * @Override public Integer getNumber() { return number; }
+     */
 
   }
 }
