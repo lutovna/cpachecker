@@ -41,7 +41,16 @@ public class CalledFunctions {
     predessorFunctionName = "";
   }
 
-  public void addFunction(String funcName) {
+  public void addFunctionSafe(String funcName) {
+
+    if (callingStack.empty()) {
+      addFunction(predessorFunctionName);
+    }
+
+    addFunction(funcName);
+  }
+
+  private void addFunction(String funcName) {
     int calls = 0;
 
     if (functions.containsKey(funcName)) {
@@ -51,7 +60,6 @@ public class CalledFunctions {
     callingStack.push(funcName);
   }
 
-  // TODO: do we need this function?
   private void removeFunction(String funcName) {
       int calls = functions.get(funcName) - 1;
       callingStack.pop();

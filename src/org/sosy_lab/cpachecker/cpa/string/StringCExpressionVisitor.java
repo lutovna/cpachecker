@@ -43,8 +43,6 @@ import org.sosy_lab.cpachecker.cfa.ast.c.CTypeIdExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.CUnaryExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.DefaultCExpressionVisitor;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
-import org.sosy_lab.cpachecker.cpa.ifcsecurity.util.SetUtil;
-import org.sosy_lab.cpachecker.cpa.string.util.CIString;
 import org.sosy_lab.cpachecker.cpa.string.util.PRString;
 import org.sosy_lab.cpachecker.cpa.string.util.SUString;
 import org.sosy_lab.cpachecker.cpa.string.util.StringState;
@@ -77,17 +75,25 @@ public class StringCExpressionVisitor
 
   @Override
   public StringState visit(CArraySubscriptExpression e) throws UnrecognizedCodeException {
-    return (e.getArrayExpression()).accept(this);
+    // return (e.getArrayExpression()).accept(this);
+
+    StringState newStringState = (e.getArrayExpression()).accept(this);
+    newStringState.setPRDomain(PRString.TOP);
+    newStringState.setSUDomain(SUString.TOP);
+
+    return newStringState;
   }
 
   @Override
   public StringState visit(CCharLiteralExpression e) throws UnrecognizedCodeException {
-    return new StringState(Character.toString(e.getCharacter()));
+    // return new StringState(Character.toString(e.getCharacter()));
+    return new StringState(strings.getActivity(), Character.toString(e.getCharacter()));
   }
 
   @Override
   public StringState visit(CStringLiteralExpression e) throws UnrecognizedCodeException {
-    return new StringState(e.getContentString());
+    // return new StringState(e.getContentString());
+    return new StringState(strings.getActivity(), e.getContentString());
   }
 
   @Override
@@ -171,111 +177,25 @@ public class StringCExpressionVisitor
       CFunctionCallExpression expression) {
     switch (fName) {
       case "strtok":
-        return evaluateSTRTOK(expression);
+        return builtins.evaluateSTRTOK(this, expression);
       case "strstr":
-        return evaluateSTRSTR(expression);
+        return builtins.evaluateSTRSTR(this, expression);
       case "strpbrk":
-        return evaluateSTRSTR(expression);
+        return builtins.evaluateSTRSTR(this, expression);
+      case "strcpy":
+        return builtins.evaluateSTRCPY(this, expression, "strcpy");
+      case "strncpy":
+        return builtins.evaluateSTRCPY(this, expression, "strncpy");
+      case "memcpy":
+        return builtins.evaluateSTRCPY(this, expression, "memcpy");
+      case "memmove":
+        return builtins.evaluateSTRCPY(this, expression, "memmove");
+      case "strcat":
+        return builtins.evaluateSTRCAT(this, expression, "strcat");
+      case "strncat":
+        return builtins.evaluateSTRCAT(this, expression, "strncat");
       default:
         return StringState.EMPTY;
     }
-  }
-
-  private StringState evaluateSTRTOK(CFunctionCallExpression expression) {
-
-    // char *strtok(char *string, const char *delim)
-
-    CExpression s1 = expression.getParameterExpressions().get(0);
-    CExpression s2 = expression.getParameterExpressions().get(1);
-
-    try {
-
-      StringState strState1 = s1.accept(this);
-      StringState strState2 = s2.accept(this);
-
-      if (strState1.isBottom() || strState2.isBottom()) {
-        // if string = NULL
-        if (!builtins.isNEW()) {
-          return builtins.getPrevCIString();
-        }
-        return StringState.BOTTOM;
-
-      } else {
-        // if string != NULL
-        // explicitCIString exCIStr1 = (explicitCIString) strState1;
-        // explicitCIString exCIStr2 = (explicitCIString) strState2;
-
-        if (strState1.isEmpty()) {
-          // if string is empty we return NULL
-          return StringState.BOTTOM;
-        }
-
-        builtins.setNEWFalse();
-
-        strState1.setPRDomain(PRString.EMPTY);
-        strState1.setSUDomain(SUString.EMPTY);
-        // Exists one symbol from delim in string?
-        Boolean isInters =
-            !SetUtil
-                .generalizedIntersect(
-                    ((CIString) strState1.getCIDomain()).getMaybe().asSet(),
-                    ((CIString) strState2.getCIDomain()).getMaybe().asSet())
-                .isEmpty();
-
-        if (isInters) {
-          // now we can't say which symbols are certainly in string
-          ((CIString) strState1.getCIDomain()).clearCertainly();
-          builtins.setPrevStringState(strState1);
-          return strState1;
-        } else {
-          // return NULL
-          builtins.setNEWTrue();
-          return StringState.BOTTOM;
-        }
-      }
-
-    } catch (UnrecognizedCodeException e) {
-      e.printStackTrace();
-    }
-    return StringState.EMPTY;
-  }
-
-  private StringState evaluateSTRSTR(CFunctionCallExpression expression) {
-
-    // char *strstr(const char *str1, const char *str2)
-    CExpression s1 = expression.getParameterExpressions().get(0);
-    CExpression s2 = expression.getParameterExpressions().get(1);
-
-    try {
-
-      StringState strState1 = s1.accept(this);
-      StringState strState2 = s2.accept(this);
-
-      if (strState1.isBottom() || strState2.isBottom()) {
-        // ERROR
-        // TODO: write it
-        return StringState.BOTTOM;
-      }
-
-      // explicitCIString exCIStr1 = (explicitCIString) strState1;
-      // explicitCIString exCIStr2 = (explicitCIString) strState2;
-
-      if (strState1.isLessOrEqual(strState2)) {
-        // if str2 is found in str1
-        if (strState2.isEmpty()) {
-          return strState1;
-        }
-        // we know only that str2 is in certainly
-        return strState1.join(strState2);
-
-      } else {
-        // if the str2 is not found in str1 return NULL
-        return StringState.BOTTOM;
-      }
-
-    } catch (UnrecognizedCodeException e) {
-      e.printStackTrace();
-    }
-    return StringState.EMPTY;
   }
 }

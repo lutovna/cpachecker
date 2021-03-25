@@ -35,9 +35,24 @@ public class Strings
   private static final long serialVersionUID = 1L;
 
   private final PersistentMap<String, StringState> stringStates;
+  private static Integer numberOfDomains = 3;
+
+  private static Boolean[] activity = new Boolean[numberOfDomains];
 
   public Strings() {
     stringStates = PathCopyingPersistentTreeMap.of();
+  }
+
+  public Strings(Boolean[] newActivity) {
+    stringStates = PathCopyingPersistentTreeMap.of();
+
+    for (int i = 0; i < numberOfDomains; i++) {
+      if (i < newActivity.length) {
+        activity[i] = newActivity[i];
+      } else {
+        activity[i] = false;
+      }
+    }
   }
 
   public Strings(PersistentMap<String, StringState> stringStates) {
@@ -96,6 +111,14 @@ public class Strings
     }
 
     return newState;
+  }
+
+  public Boolean[] getActivity() {
+    return activity;
+  }
+
+  public Boolean getActivityByNumber(Integer i) {
+    return activity[i];
   }
 
   // Join two sets (name, StringState). If exist name from this.keySet() and from pOther.keySet()

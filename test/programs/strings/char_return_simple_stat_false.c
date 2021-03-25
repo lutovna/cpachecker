@@ -1,3 +1,7 @@
+char f() {
+ return 'a';
+}
+
 int main() {
   if (f() == 'a') {
     ERROR: return;
@@ -5,6 +9,3 @@ int main() {
   return 0;
 }
 
-char f() {
- return 'a';
-}

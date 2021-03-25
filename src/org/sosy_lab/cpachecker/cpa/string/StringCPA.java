@@ -25,6 +25,7 @@ package org.sosy_lab.cpachecker.cpa.string;
 
 import org.sosy_lab.common.configuration.Configuration;
 import org.sosy_lab.common.configuration.InvalidConfigurationException;
+import org.sosy_lab.common.configuration.Option;
 import org.sosy_lab.common.configuration.Options;
 import org.sosy_lab.cpachecker.cfa.model.CFANode;
 import org.sosy_lab.cpachecker.core.defaults.AbstractCPA;
@@ -41,6 +42,9 @@ import org.sosy_lab.cpachecker.core.interfaces.TransferRelation;
 
 public class StringCPA extends AbstractCPA {
 
+  @Option(secure = true, name = "stringActivity", description = "active domains")
+  private String stringActivity = "111";
+
   /*
    * @Option( secure = true, name = "merge", toUppercase = true, values = {"SEP", "JOIN"},
    * description = "which merge operator to use for SignCPA") private String mergeType = "SEP";
@@ -53,6 +57,22 @@ public class StringCPA extends AbstractCPA {
    * protected StringCPA(AbstractDomain pDomain, TransferRelation pTransfer) { super(pDomain,
    * pTransfer); }
    */
+  private Integer numberOfDomains = 3;
+  private Boolean[] activity = new Boolean[numberOfDomains];
+
+  // initializing activity
+  {
+    char[] charActivity = stringActivity.toCharArray();
+    int i = 0;
+    for (; i < charActivity.length && i < numberOfDomains; i++) {
+      activity[i] = (charActivity[i] == '1');
+    }
+    if (i < numberOfDomains - 1) {
+      for (; i < numberOfDomains; i++) {
+        activity[i] = false;
+      }
+    }
+  }
 
   protected StringCPA(Configuration config) throws InvalidConfigurationException {
     super("SEP", "JOIN", DelegateAbstractDomain.<Strings>getInstance(), null);
@@ -62,12 +82,14 @@ public class StringCPA extends AbstractCPA {
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition)
       throws InterruptedException {
-    return new Strings();
+    return new Strings(activity);
+    // return new Strings();
   }
 
   @Override
   public TransferRelation getTransferRelation() {
-    return new StringTransferRelation();
+    return new StringTransferRelation(activity);
+    // return new StringTransferRelation();
   }
 
   public static CPAFactory factory() {

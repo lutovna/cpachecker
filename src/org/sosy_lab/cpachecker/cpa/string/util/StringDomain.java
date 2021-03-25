@@ -75,10 +75,10 @@ public interface StringDomain<T> extends Serializable, LatticeAbstractState<Stri
       return true;
     }
 
-    /*
-     * @Override public Integer getNumber() { return number; }
-     */
-
+    @Override
+    public String toString() {
+      return "BOTTOM";
+    }
   }
 
   public class topString<T> implements StringDomain<T> {
@@ -108,9 +108,10 @@ public interface StringDomain<T> extends Serializable, LatticeAbstractState<Stri
       return false;
     }
 
-    /*
-     * @Override public Integer getNumber() { return number; }
-     */
+    @Override
+    public String toString() {
+      return "TOP";
+    }
 
   }
 }
