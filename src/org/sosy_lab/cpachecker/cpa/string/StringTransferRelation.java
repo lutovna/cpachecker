@@ -45,7 +45,6 @@ import org.sosy_lab.cpachecker.cfa.ast.c.CRightHandSide;
 import org.sosy_lab.cpachecker.cfa.ast.c.CStatement;
 import org.sosy_lab.cpachecker.cfa.ast.c.CVariableDeclaration;
 import org.sosy_lab.cpachecker.cfa.model.BlankEdge;
-import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.cfa.model.c.CAssumeEdge;
 import org.sosy_lab.cpachecker.cfa.model.c.CDeclarationEdge;
 import org.sosy_lab.cpachecker.cfa.model.c.CFunctionCallEdge;
@@ -97,25 +96,23 @@ public class StringTransferRelation
   }
 
   @Override
-  protected Strings handleReturnStatementEdge(CReturnStatementEdge cfaEdge) {
+  protected Strings handleReturnStatementEdge(CReturnStatementEdge cfaEdge)
+      throws CPATransferException {
 
     called.setPredessorFunctionName(cfaEdge);
     Strings newState = state;
     if (cfaEdge.asAssignment().isPresent()) {
       CAssignment ass = cfaEdge.asAssignment().get();
       StringCExpressionVisitor visitor =
-          new StringCExpressionVisitor(cfaEdge, newState, builtins, called);
-      try {
-        newState =
-            removeAndAddStringState(
-                newState,
-                ass.getLeftHandSide(),
-                ((CExpression) ass.getRightHandSide()).accept(visitor));
-        return newState;
+          new StringCExpressionVisitor(/* cfaEdge, */ newState, builtins, called);
 
-      } catch (UnrecognizedCodeException e) {
-        e.printStackTrace();
-      }
+      newState =
+          removeAndAddStringState(
+              newState,
+              ass.getLeftHandSide(),
+              ((CExpression) ass.getRightHandSide()).accept(visitor));
+      return newState;
+
     }
 
     return state;
@@ -124,7 +121,7 @@ public class StringTransferRelation
   @Override
   protected @Nullable Strings
       handleAssumption(CAssumeEdge cfaEdge, CExpression expression, boolean truthAssumption)
-          throws CPATransferException {
+          throws UnrecognizedCodeException {
 
     called.setPredessorFunctionName(cfaEdge);
     Strings newState = state;
@@ -145,7 +142,7 @@ public class StringTransferRelation
     }
 
     StringCExpressionVisitor visitor =
-        new StringCExpressionVisitor(cfaEdge, newState, builtins, called);
+        new StringCExpressionVisitor(/* cfaEdge, */ newState, builtins, called);
     StringState strState1 = operand1.accept(visitor);
     StringState strState2 = operand2.accept(visitor);
 
@@ -179,7 +176,7 @@ public class StringTransferRelation
   @Override
   protected Strings
       handleDeclarationEdge(CDeclarationEdge cfaEdge, CDeclaration declaration)
-          throws UnrecognizedCodeException {
+          throws CPATransferException {
 
     called.setPredessorFunctionName(cfaEdge);
     Strings newState = state;
@@ -198,7 +195,7 @@ public class StringTransferRelation
     newState =
           newState.removeAndAddStringState(
               called.getQualifiedVariableNameFromDeclaration(decl),
-              evaluateStringState(newState, exp, cfaEdge));
+              evaluateStringState(newState, exp/* , cfaEdge */ ));
     }
 
     return newState;
@@ -207,11 +204,11 @@ public class StringTransferRelation
 
   @Override
   protected Strings handleStatementEdge(CStatementEdge cfaEdge, CStatement statement)
-      throws UnrecognizedCodeException {
+      throws UnrecognizedCodeException, CPATransferException {
 
     called.setPredessorFunctionName(cfaEdge);
     if (statement instanceof CAssignment) {
-      return handleAssignment((CAssignment) statement, cfaEdge);
+      return handleAssignment((CAssignment) statement/* , cfaEdge */ );
     } else if (statement instanceof CFunctionCall) {
 
       CFunctionCall fCall = (CFunctionCall) statement;
@@ -222,7 +219,7 @@ public class StringTransferRelation
         String funcName = ((CIdExpression) fNameExpression).getName();
 
         if (builtins.isABuiltin(funcName)) {
-          return handleBuiltinFunctionCall(cfaEdge, fCallExp, funcName);
+          return handleBuiltinFunctionCall(/* cfaEdge, */ fCallExp, funcName);
         }
       }
     }
@@ -231,15 +228,16 @@ public class StringTransferRelation
 
   protected Strings
       handleBuiltinFunctionCall(
-          CStatementEdge cfaEdge,
+          /* CStatementEdge cfaEdge, */
           CFunctionCallExpression fCallExp,
-          String calledFunctionName) {
+          String calledFunctionName)
+          throws UnrecognizedCodeException, CPATransferException {
     Strings newState = state;
 
     CExpression s1 = fCallExp.getParameterExpressions().get(0);
 
     StringCExpressionVisitor visitor =
-        new StringCExpressionVisitor(cfaEdge, newState, builtins, called);
+        new StringCExpressionVisitor(/* cfaEdge, */ newState, builtins, called);
 
     switch (calledFunctionName) {
       case "strcpy":
@@ -284,15 +282,18 @@ public class StringTransferRelation
     }
   }
 
-  private Strings handleAssignment(CAssignment assignExpression, CStatementEdge cfaEdge)
-      throws UnrecognizedCodeException {
+  private Strings handleAssignment(CAssignment assignExpression /* , CStatementEdge cfaEdge */)
+      throws UnrecognizedCodeException, CPATransferException {
 
     Strings newState = state;
 
     CExpression op1 = assignExpression.getLeftHandSide();
     CRightHandSide op2 = assignExpression.getRightHandSide();
 
-    return removeAndAddStringState(newState, op1, evaluateStringState(newState, op2, cfaEdge));
+    return removeAndAddStringState(
+        newState,
+        op1,
+        evaluateStringState(newState, op2/* , cfaEdge */ ));
 
   }
 
@@ -302,7 +303,7 @@ public class StringTransferRelation
       List<CExpression> arguments,
       List<CParameterDeclaration> parameters,
       String calledFunctionName)
-      throws UnrecognizedCodeException {
+      throws UnrecognizedCodeException, CPATransferException {
 
     called.setPredessorFunctionName(cfaEdge);
     Strings newState = state;
@@ -312,7 +313,7 @@ public class StringTransferRelation
 
       // arguments have names with function from predessor
       called.setInPredFunTrue();
-      StringState stringState = evaluateStringState(newState, arguments.get(i), cfaEdge);
+      StringState stringState = evaluateStringState(newState, arguments.get(i)/* , cfaEdge */ );
       // parametrs have names with function from peek of stack (= from successor)
       called.setInPredFunFalse();
       String formalParameterName =
@@ -330,7 +331,8 @@ public class StringTransferRelation
       CFunctionSummaryEdge fnkCall,
       CFunctionCall summaryExpr,
       String callerFunctionName)
-      throws CPATransferException {
+      throws CPATransferException
+  {
 
     called.setPredessorFunctionName(cfaEdge);
     Strings newState = state;
@@ -414,10 +416,10 @@ public class StringTransferRelation
 
   // return new domain(expression)
   private StringState
-      evaluateStringState(Strings strings, CRightHandSide expression, CFAEdge cfaEdge)
-          throws UnrecognizedCodeException {
+      evaluateStringState(Strings strings, CRightHandSide expression /* , cfaEdge */ )
+          throws CPATransferException {
     return expression
-        .accept(new StringCExpressionVisitor(cfaEdge, strings, builtins, called));
+        .accept(new StringCExpressionVisitor(/* cfaEdge, */ strings, builtins, called));
   }
 
   // this function delete domains of function local variables and pop function from stack

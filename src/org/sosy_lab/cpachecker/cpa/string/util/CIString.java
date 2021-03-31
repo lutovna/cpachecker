@@ -47,8 +47,8 @@ public class CIString implements StringDomain<CIString> {
     char[] charArray = str.toCharArray();
 
     for (int i = 0; i < charArray.length; i++) {
-      certainly = certainly.addAndCopy(new Character(charArray[i]));
-      maybe = maybe.addAndCopy(new Character(charArray[i]));
+      certainly = certainly.addAndCopy(charArray[i]);
+      maybe = maybe.addAndCopy(charArray[i]);
     }
   }
 

@@ -65,124 +65,115 @@ public class BuiltinFunctions {
       evaluateSTRCPY(
           StringCExpressionVisitor visitor,
           CFunctionCallExpression expression,
-          String fName) {
+          String fName)
+          throws UnrecognizedCodeException {
     CExpression s2 = expression.getParameterExpressions().get(1);
 
-    try {
-      StringState strState = s2.accept(visitor);
+    StringState strState = s2.accept(visitor);
 
-      if (!strState.isBottom() || !fName.equals("strcpy")) {
+    if (!strState.isBottom() || !fName.equals("strcpy")) {
 
-        StringState newStringState = StringState.TOP.copyOf();
+      StringState newStringState = StringState.TOP.copyOf();
 
-        if (activity[0]) {
-          if (!strState.getCIDomain().isBottom() && !strState.getCIDomain().isTop()) {
-            CIString newCIStr = (CIString) strState.getCIDomain();
-            newCIStr.clearCertainly();
-            newStringState.setCIDomain(newCIStr);
-          } else {
-            newStringState.setCIDomain(strState.getCIDomain());
-          }
+      if (activity[0]) {
+
+        if (!strState.getCIDomain().isBottom() && !strState.getCIDomain().isTop()) {
+
+          CIString newCIStr = (CIString) strState.getCIDomain();
+          newCIStr.clearCertainly();
+          newStringState.setCIDomain(newCIStr);
+
+        } else {
+          newStringState.setCIDomain(strState.getCIDomain());
         }
+      }
 
         // TODO: after adding lenght make this more accurate (PR)
         return newStringState;
       }
-    } catch (UnrecognizedCodeException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+
     return StringState.EMPTY;
   }
 
   public StringState evaluateSTRCAT(
       StringCExpressionVisitor visitor,
       CFunctionCallExpression expression,
-      String fName) {
+      String fName)
+      throws UnrecognizedCodeException {
 
     CExpression s1 = expression.getParameterExpressions().get(0);
     CExpression s2 = expression.getParameterExpressions().get(1);
 
-    try {
-      StringState strState1 = s1.accept(visitor);
-      StringState strState2 = s2.accept(visitor);
+    StringState strState1 = s1.accept(visitor);
+    StringState strState2 = s2.accept(visitor);
 
-      if (!strState1.isBottom() && !strState2.isBottom()) {
-        return concat(strState1, strState2, fName);
-      }
-    } catch (UnrecognizedCodeException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+    if (!strState1.isBottom() && !strState2.isBottom()) {
+      return concat(strState1, strState2, fName);
     }
-
     return StringState.EMPTY;
   }
 
   public StringState
-      evaluateSTRTOK(StringCExpressionVisitor visitor, CFunctionCallExpression expression) {
+      evaluateSTRTOK(StringCExpressionVisitor visitor, CFunctionCallExpression expression)
+          throws UnrecognizedCodeException {
 
     // char *strtok(char *string, const char *delim)
 
     CExpression s1 = expression.getParameterExpressions().get(0);
     CExpression s2 = expression.getParameterExpressions().get(1);
 
-    try {
 
-      StringState strState1 = s1.accept(visitor);
-      StringState strState2 = s2.accept(visitor);
+    StringState strState1 = s1.accept(visitor);
+    StringState strState2 = s2.accept(visitor);
 
-      if (strState1.isBottom() || strState2.isBottom()) {
-        // if string = NULL
-        if (!isNEW()) {
-          return getPrevCIString();
-        }
+    if (strState1.isBottom() || strState2.isBottom()) {
+      // if string = NULL
+      if (!isNEW()) {
+        return getPrevCIString();
+      }
+      return StringState.BOTTOM;
+
+    } else {
+
+      if (strState1.isEmpty()) {
+        // if string is empty we return NULL
         return StringState.BOTTOM;
-
-      } else {
-
-        if (strState1.isEmpty()) {
-          // if string is empty we return NULL
-          return StringState.BOTTOM;
-        }
-
-        setNEWFalse();
-
-        strState1.setPRDomain(PRString.EMPTY);
-        strState1.setSUDomain(SUString.EMPTY);
-        // Exists one symbol from delim in string?
-        Boolean isInters =
-            !SetUtil
-                .generalizedIntersect(
-                    ((CIString) strState1.getCIDomain()).getMaybe().asSet(),
-                    ((CIString) strState2.getCIDomain()).getMaybe().asSet())
-                .isEmpty();
-
-        if (isInters) {
-          // now we can't say which symbols are certainly in string
-          ((CIString) strState1.getCIDomain()).clearCertainly();
-          setPrevStringState(strState1);
-          return strState1;
-        } else {
-          // return NULL
-          setNEWTrue();
-          return StringState.BOTTOM;
-        }
       }
 
-    } catch (UnrecognizedCodeException e) {
-      e.printStackTrace();
+      setNEWFalse();
+
+      // TODO: make it more accurate
+      strState1.setPRDomain(PRString.EMPTY);
+      strState1.setSUDomain(SUString.EMPTY);
+      // Exists one symbol from delim in string?
+      Boolean isInters =
+          !SetUtil
+              .generalizedIntersect(
+                  ((CIString) strState1.getCIDomain()).getMaybe().asSet(),
+                  ((CIString) strState2.getCIDomain()).getMaybe().asSet())
+              .isEmpty();
+
+      if (isInters) {
+        // now we can't say which symbols are certainly in string
+        ((CIString) strState1.getCIDomain()).clearCertainly();
+        setPrevStringState(strState1);
+        return strState1;
+      } else {
+        // return NULL
+        setNEWTrue();
+        return StringState.BOTTOM;
+      }
     }
-    return StringState.EMPTY;
   }
 
   public StringState
-      evaluateSTRSTR(StringCExpressionVisitor visitor, CFunctionCallExpression expression) {
+      evaluateSTRSTR(StringCExpressionVisitor visitor, CFunctionCallExpression expression)
+          throws UnrecognizedCodeException {
 
     // char *strstr(const char *str1, const char *str2)
     CExpression s1 = expression.getParameterExpressions().get(0);
     CExpression s2 = expression.getParameterExpressions().get(1);
 
-    try {
 
       StringState strState1 = s1.accept(visitor);
       StringState strState2 = s2.accept(visitor);
@@ -205,11 +196,6 @@ public class BuiltinFunctions {
         // if the str2 is not found in str1 return NULL
         return StringState.BOTTOM;
       }
-
-    } catch (UnrecognizedCodeException e) {
-      e.printStackTrace();
-    }
-    return StringState.EMPTY;
   }
 
   public void setNEWTrue() {

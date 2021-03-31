@@ -42,7 +42,6 @@ import org.sosy_lab.cpachecker.cfa.ast.c.CStringLiteralExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.CTypeIdExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.CUnaryExpression;
 import org.sosy_lab.cpachecker.cfa.ast.c.DefaultCExpressionVisitor;
-import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
 import org.sosy_lab.cpachecker.cpa.string.util.PRString;
 import org.sosy_lab.cpachecker.cpa.string.util.SUString;
 import org.sosy_lab.cpachecker.cpa.string.util.StringState;
@@ -52,32 +51,31 @@ public class StringCExpressionVisitor
     extends DefaultCExpressionVisitor<StringState, UnrecognizedCodeException>
     implements CRightHandSideVisitor<StringState, UnrecognizedCodeException> {
 
-  private final CFAEdge cfaEdge;
+  // private final CFAEdge cfaEdge;
   private final Strings strings;
   private final BuiltinFunctions builtins;
   private CalledFunctions called;
 
   public StringCExpressionVisitor(
-      CFAEdge edge,
+      // CFAEdge edge,
       Strings pStrings,
       BuiltinFunctions pBuiltins,
       CalledFunctions pCalled) {
-    cfaEdge = edge;
+    // cfaEdge = edge;
     strings = pStrings;
     builtins = pBuiltins;
     called = pCalled;
   }
 
   @Override
-  protected StringState visitDefault(CExpression pExp) {
+  protected StringState visitDefault(CExpression pExp) throws UnrecognizedCodeException {
     return StringState.BOTTOM;
   }
 
   @Override
   public StringState visit(CArraySubscriptExpression e) throws UnrecognizedCodeException {
-    // return (e.getArrayExpression()).accept(this);
 
-    StringState newStringState = (e.getArrayExpression()).accept(this);
+    StringState newStringState = e.getArrayExpression().accept(this);
     newStringState.setPRDomain(PRString.TOP);
     newStringState.setSUDomain(SUString.TOP);
 
@@ -148,7 +146,7 @@ public class StringCExpressionVisitor
 
   @Override
   public StringState visit(CPointerExpression e) throws UnrecognizedCodeException {
-    return (e.getOperand()).accept(this);
+    return e.getOperand().accept(this);
   }
 
   @Override
@@ -174,7 +172,8 @@ public class StringCExpressionVisitor
 
   private StringState evaluateFunctionExpression(
       String fName,
-      CFunctionCallExpression expression) {
+      CFunctionCallExpression expression)
+      throws UnrecognizedCodeException {
     switch (fName) {
       case "strtok":
         return builtins.evaluateSTRTOK(this, expression);

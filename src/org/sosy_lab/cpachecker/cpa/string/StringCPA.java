@@ -57,22 +57,8 @@ public class StringCPA extends AbstractCPA {
    * protected StringCPA(AbstractDomain pDomain, TransferRelation pTransfer) { super(pDomain,
    * pTransfer); }
    */
-  private Integer numberOfDomains = 3;
-  private Boolean[] activity = new Boolean[numberOfDomains];
 
-  // initializing activity
-  {
-    char[] charActivity = stringActivity.toCharArray();
-    int i = 0;
-    for (; i < charActivity.length && i < numberOfDomains; i++) {
-      activity[i] = (charActivity[i] == '1');
-    }
-    if (i < numberOfDomains - 1) {
-      for (; i < numberOfDomains; i++) {
-        activity[i] = false;
-      }
-    }
-  }
+  private Integer numberOfDomains = 3;
 
   protected StringCPA(Configuration config) throws InvalidConfigurationException {
     super("SEP", "JOIN", DelegateAbstractDomain.<Strings>getInstance(), null);
@@ -82,13 +68,13 @@ public class StringCPA extends AbstractCPA {
   @Override
   public AbstractState getInitialState(CFANode pNode, StateSpacePartition pPartition)
       throws InterruptedException {
-    return new Strings(activity);
+    return new Strings(activityToBoolean(stringActivity));
     // return new Strings();
   }
 
   @Override
   public TransferRelation getTransferRelation() {
-    return new StringTransferRelation(activity);
+    return new StringTransferRelation(activityToBoolean(stringActivity));
     // return new StringTransferRelation();
   }
 
@@ -104,5 +90,22 @@ public class StringCPA extends AbstractCPA {
   @Override
   public StopOperator getStopOperator() {
     return buildStopOperator("JOIN");
+  }
+
+  private Boolean[] activityToBoolean(String str) {
+    char[] charActivity = str.toCharArray();
+    Boolean[] activity = new Boolean[numberOfDomains];
+
+    int i = 0;
+    for (; i < charActivity.length && i < numberOfDomains; i++) {
+      activity[i] = (charActivity[i] == '1');
+    }
+    if (i < numberOfDomains - 1) {
+      for (; i < numberOfDomains; i++) {
+        activity[i] = false;
+      }
+    }
+
+    return activity;
   }
 }

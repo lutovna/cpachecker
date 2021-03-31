@@ -213,9 +213,9 @@ public class StringState implements Serializable, LatticeAbstractState<StringSta
 
     return new StringState(
         activity,
-        (ciDomain.join(pOther.ciDomain)),
-        (prDomain.join(pOther.prDomain)),
-        (suDomain.join(pOther.suDomain)));
+        ciDomain.join(pOther.ciDomain),
+        prDomain.join(pOther.prDomain),
+        suDomain.join(pOther.suDomain));
   }
 
   @Override
