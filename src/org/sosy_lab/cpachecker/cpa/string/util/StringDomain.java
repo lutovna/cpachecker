@@ -105,7 +105,7 @@ public interface StringDomain<T> extends Serializable, LatticeAbstractState<Stri
 
     @Override
     public boolean isLessOrEqual(StringDomain<T> pOther) {
-      return false;
+      return pOther.isTop();
     }
 
     @Override

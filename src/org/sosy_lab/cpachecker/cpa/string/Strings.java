@@ -35,15 +35,15 @@ public class Strings
   private static final long serialVersionUID = 1L;
 
   private final PersistentMap<String, StringState> stringStates;
-  private static Integer numberOfDomains = 3;
+  private static final int numberOfDomains = 3;
 
-  private static Boolean[] activity = new Boolean[numberOfDomains];
+  private static final boolean[] activity = new boolean[numberOfDomains];
 
   public Strings() {
     stringStates = PathCopyingPersistentTreeMap.of();
   }
 
-  public Strings(Boolean[] newActivity) {
+  public Strings(boolean[] newActivity) {
     stringStates = PathCopyingPersistentTreeMap.of();
 
     for (int i = 0; i < numberOfDomains; i++) {
@@ -113,11 +113,11 @@ public class Strings
     return newState;
   }
 
-  public Boolean[] getActivity() {
+  public boolean[] getActivity() {
     return activity;
   }
 
-  public Boolean getActivityByNumber(Integer i) {
+  public boolean getActivityByNumber(Integer i) {
     return activity[i];
   }
 

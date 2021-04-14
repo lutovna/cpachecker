@@ -22,15 +22,15 @@ package org.sosy_lab.cpachecker.cpa.string.util;
 public class PRString implements StringDomain<PRString> {
 
   private static final long serialVersionUID = 1L;
-  private String prefix;
+  private final String prefix;
   // private Integer number = 2;
 
   public PRString() {
-    prefix = new String();
+    prefix = "";
   }
 
   public PRString(String str) {
-    prefix = new String(str);
+    prefix = str;
   }
 
   @Override
@@ -45,19 +45,16 @@ public class PRString implements StringDomain<PRString> {
 
   public final static PRString EMPTY = new PRString();
   public final static bottomString<PRString> BOTTOM = new bottomString<>();
-  public final static topString<PRString> TOP = new topString<>();
+  public final static PRString TOP = new PRString();
 
   public String getPrefix() {
     return prefix;
   }
 
-  public Integer getLenght() {
+  public int getLenght() {
     return prefix.length();
   }
 
-  public void addToPrefix(Character c) {
-    prefix = prefix.concat(String.valueOf(c));
-  }
 
   public Character getFromPrefixByIndex(int i) {
     if (i > getLenght()) {
@@ -70,9 +67,6 @@ public class PRString implements StringDomain<PRString> {
     return prefix.isEmpty();
   }
 
-  public void clean() {
-    prefix = prefix.replaceAll(prefix, "");
-  }
 
   @Override
   public StringDomain<PRString> join(StringDomain<PRString> pOther) {
@@ -80,17 +74,17 @@ public class PRString implements StringDomain<PRString> {
       return BOTTOM;
     }
 
-    PRString newPRStr = new PRString();
     PRString expOther = (PRString) pOther;
+    int lenOfCommonPref = 0;
 
-    for (int i = 0;
-        i < Math.min(getLenght(), expOther.getLenght())
-            && getFromPrefixByIndex(i) == expOther.getFromPrefixByIndex(i);
-        i++) {
-      newPRStr.addToPrefix(getFromPrefixByIndex(i));
+    for (;
+        lenOfCommonPref < Math.min(getLenght(), expOther.getLenght())
+            && getFromPrefixByIndex(lenOfCommonPref)
+                .equals(expOther.getFromPrefixByIndex(lenOfCommonPref));
+        lenOfCommonPref++) {
     }
 
-    return newPRStr;
+    return new PRString(prefix.substring(0, lenOfCommonPref));
   }
 
   @Override
@@ -100,14 +94,16 @@ public class PRString implements StringDomain<PRString> {
       return false;
     }
 
-    PRString expOther = (PRString) pOther;
+    // PRString expOther = (PRString) pOther;
 
-    if (getLenght() > expOther.getLenght()
-        && expOther.getPrefix() == getPrefix().substring(0, getLenght() - 1)) {
-      return true;
-    }
+    return prefix.startsWith(((PRString) pOther).getPrefix());
 
-    return false;
+    /*
+     * if (getLenght() >= expOther.getLenght() &&
+     * expOther.getPrefix().equals(getPrefix().substring(0, expOther.getLenght()))) { return true; }
+     *
+     * return false;
+     */
   }
 
   @Override
@@ -116,7 +112,12 @@ public class PRString implements StringDomain<PRString> {
     if (!(pObj instanceof PRString)) {
       return false;
     }
-    return getPrefix() == ((PRString) pObj).getPrefix();
+
+    if ((((PRString) pObj)).isTop()) {
+      return getPrefix().equals("");
+    }
+
+    return getPrefix().equals(((PRString) pObj).getPrefix());
   }
 
   @Override

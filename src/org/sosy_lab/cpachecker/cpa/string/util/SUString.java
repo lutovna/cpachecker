@@ -22,15 +22,15 @@ package org.sosy_lab.cpachecker.cpa.string.util;
 public class SUString implements StringDomain<SUString> {
 
   private static final long serialVersionUID = 1L;
-  private String suffix;
+  private final String suffix;
   // private Integer number = 3;
 
   public SUString() {
-    suffix = new String();
+    suffix = "";
   }
 
   public SUString(String str) {
-    suffix = new String(str);
+    suffix = str;
   }
 
   @Override
@@ -45,18 +45,14 @@ public class SUString implements StringDomain<SUString> {
 
   public final static SUString EMPTY = new SUString();
   public final static bottomString<SUString> BOTTOM = new bottomString<>();
-  public final static topString<SUString> TOP = new topString<>();
+  public final static SUString TOP = new SUString();
 
   public String getSuffix() {
     return suffix;
   }
 
-  public Integer getLenght() {
+  public int getLenght() {
     return suffix.length();
-  }
-
-  public void addToSuffix(Character c) {
-    suffix = String.valueOf(c).concat(suffix);
   }
 
   public Character getFromSuffixByIndex(int i) {
@@ -70,29 +66,23 @@ public class SUString implements StringDomain<SUString> {
     return suffix.isEmpty();
   }
 
-  public void clean() {
-    suffix = suffix.replaceAll(suffix, "");
-  }
-
   @Override
   public StringDomain<SUString> join(StringDomain<SUString> pOther) {
     if (pOther.isBottom()) {
       return BOTTOM;
     }
 
-    SUString newPRStr = new SUString();
     SUString expOther = (SUString) pOther;
+    int lenOfCommonSuf = 0;
 
-    for (int i = Math.min(getLenght(), expOther.getLenght()) - 1; i >= 0; i++) {
-
-      if (getFromSuffixByIndex(i) != expOther.getFromSuffixByIndex(i)) {
-        break;
-      }
-
-      newPRStr.addToSuffix(getFromSuffixByIndex(i));
+    for (;
+        lenOfCommonSuf < Math.min(getLenght(), expOther.getLenght())
+            && getFromSuffixByIndex(getLenght() - 1 - lenOfCommonSuf)
+                .equals(expOther.getFromSuffixByIndex(expOther.getLenght() - 1 - lenOfCommonSuf));
+        lenOfCommonSuf++) {
     }
 
-    return newPRStr;
+    return new SUString(suffix.substring(getLenght() - lenOfCommonSuf, getLenght()));
   }
 
   @Override
@@ -102,14 +92,16 @@ public class SUString implements StringDomain<SUString> {
       return false;
     }
 
-    SUString expOther = (SUString) pOther;
+    // SUString expOther = (SUString) pOther;
 
-    if (getLenght() > expOther.getLenght()
-        && expOther.getSuffix() == getSuffix().substring(0, getLenght() - 1)) {
-      return true;
-    }
-
-    return false;
+    return suffix.endsWith(((SUString) pOther).getSuffix());
+    /*
+     * if (getLenght() >= expOther.getLenght() && expOther.getSuffix()
+     * .equals(getSuffix().substring(getLenght() - expOther.getLenght(), getLenght()))) { return
+     * true; }
+     *
+     * return false;
+     */
   }
 
   @Override
@@ -119,7 +111,11 @@ public class SUString implements StringDomain<SUString> {
       return false;
     }
 
-    return getSuffix() == ((SUString) pObj).getSuffix();
+    if ((((SUString) pObj)).isTop()) {
+      return getSuffix().equals("");
+    }
+
+    return getSuffix().equals(((SUString) pObj).getSuffix());
   }
 
   @Override

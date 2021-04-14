@@ -45,17 +45,17 @@ public class BuiltinFunctions {
           "strstr",
           "strpbrk");
 
-  private Boolean STRTOK_NEW;
+  private boolean STRTOK_NEW;
   private StringState prevString;
 
-  private static final Integer numberOfDomains = 3;
-  private static Boolean[] activity = new Boolean[numberOfDomains];
+  private static final int numberOfDomains = 3;
+  private static boolean[] activity = new boolean[numberOfDomains];
 
   public final boolean isABuiltin(String fName) {
     return BFUNC.contains(fName);
   }
 
-  BuiltinFunctions(Boolean[] newActivity) {
+  BuiltinFunctions(boolean[] newActivity) {
     STRTOK_NEW = true;
     prevString = StringState.BOTTOM;
     activity = newActivity;
@@ -143,26 +143,30 @@ public class BuiltinFunctions {
       setNEWFalse();
 
       // TODO: make it more accurate
-      strState1.setPRDomain(PRString.EMPTY);
-      strState1.setSUDomain(SUString.EMPTY);
+      strState1.setPRDomain(PRString.TOP);
+      strState1.setSUDomain(SUString.TOP);
       // Exists one symbol from delim in string?
-      Boolean isInters =
-          !SetUtil
-              .generalizedIntersect(
+      if (activity[0]) {
+        Boolean isInters =
+            !SetUtil
+                .generalizedIntersect(
                   ((CIString) strState1.getCIDomain()).getMaybe().asSet(),
                   ((CIString) strState2.getCIDomain()).getMaybe().asSet())
               .isEmpty();
 
-      if (isInters) {
-        // now we can't say which symbols are certainly in string
-        ((CIString) strState1.getCIDomain()).clearCertainly();
-        setPrevStringState(strState1);
-        return strState1;
-      } else {
-        // return NULL
-        setNEWTrue();
-        return StringState.BOTTOM;
+        if (isInters) {
+          // now we can't say which symbols are certainly in string
+          ((CIString) strState1.getCIDomain()).clearCertainly();
+          setPrevStringState(strState1);
+          return strState1;
+        } else {
+          // return NULL
+          setNEWTrue();
+          return StringState.BOTTOM;
+        }
       }
+
+      return strState1;
     }
   }
 
@@ -206,7 +210,7 @@ public class BuiltinFunctions {
     STRTOK_NEW = false;
   }
 
-  public Boolean isNEW() {
+  public boolean isNEW() {
     return STRTOK_NEW;
   }
 

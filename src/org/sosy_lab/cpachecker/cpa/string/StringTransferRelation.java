@@ -69,7 +69,7 @@ public class StringTransferRelation
   private CalledFunctions called = new CalledFunctions();// function calls stack
 
   private final Integer numberOfDomains = 3;
-  private final Boolean[] activity = new Boolean[numberOfDomains];
+  private final boolean[] activity = new boolean[numberOfDomains];
   private final BuiltinFunctions builtins = new BuiltinFunctions(activity);
 
   /*
@@ -80,7 +80,7 @@ public class StringTransferRelation
   public StringTransferRelation() {
   }
 
-  public StringTransferRelation(Boolean[] newActivity) {
+  public StringTransferRelation(boolean[] newActivity) {
     for (int i = 0; i < numberOfDomains; i++) {
       if (i < newActivity.length) {
         activity[i] = newActivity[i];

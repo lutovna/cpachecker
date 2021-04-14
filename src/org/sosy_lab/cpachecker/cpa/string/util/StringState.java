@@ -35,40 +35,14 @@ public class StringState implements Serializable, LatticeAbstractState<StringSta
   private StringDomain<SUString> suDomain;
 
   // now activity is equal for all string states. May be that will change after adding percision
-  private static Integer numberOfDomains = 3;
+  private final static int numberOfDomains = 3;
 
-  private static Boolean[] activity = new Boolean[numberOfDomains];
+  private static boolean[] activity = new boolean[numberOfDomains];
 
   /*
    * // initializing actvity[] with all "true" { for (int i = 0; i < numberOfDomains; i++) {
    * activity[i] = true; } }
    */
-
-  /*
-   * public StringState() { ciDomain = new CIString(); prDomain = new PRString(); suDomain = new
-   * SUString(); }
-   */
-
-  /*
-   * public StringState(String str) { ciDomain = new CIString(str); prDomain = new PRString(str);
-   * suDomain = new SUString(str); }
-   */
-
-  private StringState(
-      StringDomain<CIString> newCIString,
-      StringDomain<PRString> newPRString,
-      StringDomain<SUString> newSUString) {
-    ciDomain = newCIString;
-    prDomain = newPRString;
-    suDomain = newSUString;
-  }
-
-  //
-  public final static StringState EMPTY =
-      new StringState(new CIString(), new PRString(), new SUString());
-  public final static StringState BOTTOM =
-      new StringState(CIString.BOTTOM, PRString.BOTTOM, SUString.BOTTOM);
-  public final static StringState TOP = new StringState(CIString.TOP, PRString.TOP, SUString.TOP);
 
   // if one of the domains is bottom, then other also should be
   private void checkBottom() {
@@ -79,7 +53,7 @@ public class StringState implements Serializable, LatticeAbstractState<StringSta
     }
   }
 
-  public StringState(Boolean[] newActivity) {
+  public StringState(boolean[] newActivity) {
     ciDomain = new CIString();
     prDomain = new PRString();
     suDomain = new SUString();
@@ -95,7 +69,7 @@ public class StringState implements Serializable, LatticeAbstractState<StringSta
     checkBottom();
   }
 
-  public StringState(Boolean[] newActivity, String str) {
+  public StringState(boolean[] newActivity, String str) {
     ciDomain = new CIString(str);
     prDomain = new PRString(str);
     suDomain = new SUString(str);
@@ -112,7 +86,7 @@ public class StringState implements Serializable, LatticeAbstractState<StringSta
   }
 
   private StringState(
-      Boolean[] newActivity,
+      boolean[] newActivity,
       StringDomain<CIString> newCIString,
       StringDomain<PRString> newPRString,
       StringDomain<SUString> newSUString) {
@@ -130,6 +104,13 @@ public class StringState implements Serializable, LatticeAbstractState<StringSta
 
     checkBottom();
   }
+
+  public final static StringState EMPTY =
+      new StringState(activity, new CIString(), new PRString(), new SUString());
+  public final static StringState BOTTOM =
+      new StringState(activity, CIString.BOTTOM, PRString.BOTTOM, SUString.BOTTOM);
+  public final static StringState TOP =
+      new StringState(activity, CIString.TOP, PRString.TOP, SUString.TOP);
 
   public boolean isEmpty() {
     return equals(StringState.EMPTY);

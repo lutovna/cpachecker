@@ -84,13 +84,11 @@ public class StringCExpressionVisitor
 
   @Override
   public StringState visit(CCharLiteralExpression e) throws UnrecognizedCodeException {
-    // return new StringState(Character.toString(e.getCharacter()));
     return new StringState(strings.getActivity(), Character.toString(e.getCharacter()));
   }
 
   @Override
   public StringState visit(CStringLiteralExpression e) throws UnrecognizedCodeException {
-    // return new StringState(e.getContentString());
     return new StringState(strings.getActivity(), e.getContentString());
   }
 

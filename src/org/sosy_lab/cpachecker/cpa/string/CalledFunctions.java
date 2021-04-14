@@ -19,9 +19,10 @@
  */
 package org.sosy_lab.cpachecker.cpa.string;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 import org.sosy_lab.cpachecker.cfa.ast.c.CSimpleDeclaration;
 import org.sosy_lab.cpachecker.cfa.ast.c.CVariableDeclaration;
 import org.sosy_lab.cpachecker.cfa.model.CFAEdge;
@@ -31,19 +32,19 @@ public class CalledFunctions {
 
 
   private Map<String, Integer> functions; // how many time we called each function
-  private Stack<String> callingStack; // stack of function calls
+  private Deque<String> callingStack; // stack of function calls
   private String predessorFunctionName; // from cfaEdge
-  private Boolean predFun = false; // sometimes we need function from predessor
+  private boolean predFun = false; // sometimes we need function from predessor
 
   public CalledFunctions() {
     functions = new HashMap<>();
-    callingStack = new Stack<>();
+    callingStack = new ArrayDeque<>();
     predessorFunctionName = "";
   }
 
   public void addFunctionSafe(String funcName) {
 
-    if (callingStack.empty()) {
+    if (callingStack.isEmpty()) {
       addFunction(predessorFunctionName);
     }
 
@@ -61,18 +62,18 @@ public class CalledFunctions {
   }
 
   private void removeFunction(String funcName) {
-      int calls = functions.get(funcName) - 1;
-      callingStack.pop();
+    int calls = functions.get(funcName) - 1;
+    callingStack.pop();
 
-      if (calls == -1) {
-        functions.remove(funcName);
-      } else {
-        functions.put(funcName, calls);
-      }
+    if (calls == -1) {
+      functions.remove(funcName);
+    } else {
+      functions.put(funcName, calls);
+    }
   }
 
   public void popFunction() {
-    if (!callingStack.empty()) {
+    if (!callingStack.isEmpty()) {
       removeFunction(callingStack.peek());
     }
   }
@@ -92,7 +93,7 @@ public class CalledFunctions {
   /** @return function_name[number_of_calls] **/
   public String getQualifiedFunctionName() {
 
-    if (callingStack.empty() || (predFun && !functions.containsKey(predessorFunctionName))) {
+    if (callingStack.isEmpty() || (predFun && !functions.containsKey(predessorFunctionName))) {
       // TODO: rewrite this!
       addFunction(predessorFunctionName);
       return getQualifiedFunctionName();

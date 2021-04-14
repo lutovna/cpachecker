@@ -58,7 +58,7 @@ public class StringCPA extends AbstractCPA {
    * pTransfer); }
    */
 
-  private Integer numberOfDomains = 3;
+  private final static int numberOfDomains = 3;
 
   protected StringCPA(Configuration config) throws InvalidConfigurationException {
     super("SEP", "JOIN", DelegateAbstractDomain.<Strings>getInstance(), null);
@@ -92,9 +92,9 @@ public class StringCPA extends AbstractCPA {
     return buildStopOperator("JOIN");
   }
 
-  private Boolean[] activityToBoolean(String str) {
+  private boolean[] activityToBoolean(String str) {
     char[] charActivity = str.toCharArray();
-    Boolean[] activity = new Boolean[numberOfDomains];
+    boolean[] activity = new boolean[numberOfDomains];
 
     int i = 0;
     for (; i < charActivity.length && i < numberOfDomains; i++) {
